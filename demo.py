@@ -173,8 +173,7 @@ def main(
     mp4_file_path = png2mp4(inputdir, outputdir)
     print('mp4_file_path', mp4_file_path)
     rgbs = read_mp4(mp4_file_path)
-    print('rgbs.shape', rgbs.shape)
-
+    print('rgbs', len(rgbs))
     # anchor_frame = rgbs[0]
     # skeleton = get_center_lines(anchor_frame)
     # skeleton = skeleton_to_coordinates(skeleton)
