@@ -18,6 +18,24 @@ from pathlib import Path
 from skimage.morphology import skeletonize
 from skimage import img_as_bool
 
+
+def get_center_lines(anchor_frame):
+    skeleton = skeletonize(anchor_frame)
+    return skeleton
+
+def skeleton_to_coordinates(skeleton):
+    # Assuming skeleton is a numpy array of shape (512, 512, 1)
+    # Flatten the skeleton to 2D
+    skeleton_2d = skeleton[:, :, 0]
+
+    # Find the coordinates of the white pixels
+    y_coords, x_coords = np.nonzero(skeleton_2d)
+
+    # Stack the coordinates into an (N, 2) array
+    coordinates = np.stack((x_coords, y_coords), axis=-1)
+
+    return coordinates
+
 def read_mp4(fn):
     vidcap = cv2.VideoCapture(fn)
     frames = []
