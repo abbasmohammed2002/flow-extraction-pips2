@@ -171,19 +171,21 @@ def main(
     inputdir = os.path.join(os.getcwd(), 'angiograms/angiogram_seg1')
     outputdir = os.path.join(os.getcwd(), 'angiograms/mp4video')
     mp4_file_path = png2mp4(inputdir, outputdir)
+    print('mp4_file_path', mp4_file_path)
     rgbs = read_mp4(mp4_file_path)
-    # rgbs = read_frames(abs_path_to_angiograms)
+    print('rgbs.shape', rgbs.shape)
 
     # anchor_frame = rgbs[0]
     # skeleton = get_center_lines(anchor_frame)
     # skeleton = skeleton_to_coordinates(skeleton)
 
     rgbs = np.stack(rgbs, axis=0) # S,H,W,1
-    print(rgbs.shape)
+    print('rgbs.shape', rgbs.shape)
     # Convert grayscale to RGB by repeating the channel
     rgbs = np.repeat(rgbs, 3, axis=-1) # S,H,W,3
+    print('rgbs.shape', rgbs.shape)
 
-    rgbs = np.stack(rgbs, axis=0) # S,H,W,3
+    # rgbs = np.stack(rgbs, axis=0) # S,H,W,3
     rgbs = rgbs[:,:,:,::-1].copy() # BGR->RGB
     rgbs = rgbs[::timestride]
     S_here,H,W,C = rgbs.shape
