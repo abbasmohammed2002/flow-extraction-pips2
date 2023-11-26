@@ -52,38 +52,34 @@ def png2mp4(input_dir, output_dir, save_file_basename='dev', fps=15):
 
     # get all *.png files in the folder
     list_png_lists = glob.glob(os.path.join(input_dir, '*.png'))
-    print(list_png_lists)
+
     # sort the .png according to the idx of each frame
     def _sortFunc(e):
         file_name = os.path.basename(e)[:-4]  # Remove the '.png' extension
+        print(f"file_name: {file_name}")
         parts = file_name.split('-')
         print(f"parts: {parts}")
-        print(f"file_name: {file_name}")
-        print(f"idx: {parts[-1]}")
-        idx = parts[-1]
-        print(f"idx as int: {idx}")
+        idx = int(parts[-1])  # Convert the last part to integer
+        print(f"idx: {idx}")
         return idx
 
     list_png_lists.sort(key=_sortFunc)
 
     output_path = os.path.join(output_dir, save_file_basename + '.mp4')
 
-    # create a video_angiograms writer
+    # create a video writer
     height, width = cv2.imread(list_png_lists[0]).shape[:-1]
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # Specify video_angiograms codec
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # Specify video codec
     video_writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
 
     for frame_path in list_png_lists:
         frame = cv2.imread(frame_path)
-
-        # covert frame to uint8 for writing to video_angiograms
         frame_uint8 = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
-
-        # write frame to video_angiograms
         video_writer.write(frame_uint8)
 
-    # release video_angiograms writer
     video_writer.release()
+    print(f"Saved to {output_path}")
+    return output_path  # Return the path to the generated MP4 file
 
 
 def read_frames(directory):
@@ -174,8 +170,8 @@ def main(
 
     inputdir = os.path.join(os.getcwd(), 'angiograms/angiogram_seg1')
     outputdir = os.path.join(os.getcwd(), 'angiograms/mp4video')
-    mp4Agio = png2mp4(inputdir, outputdir)
-    rgbs = read_mp4(mp4Agio)
+    mp4_file_path = png2mp4(inputdir, outputdir)
+    rgbs = read_mp4(mp4_file_path)
     # rgbs = read_frames(abs_path_to_angiograms)
 
     # anchor_frame = rgbs[0]
