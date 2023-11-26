@@ -1,5 +1,6 @@
 import time
 import numpy as np
+import glob
 import saverloader
 from nets.pips2 import Pips
 import utils.improc
@@ -7,10 +8,15 @@ from utils.basic import print_, print_stats
 import torch
 from tensorboardX import SummaryWriter
 import torch.nn.functional as F
+import torchvision.transforms as transforms
 from fire import Fire
 import sys
 import cv2
+import os
+import random
 from pathlib import Path
+from skimage.morphology import skeletonize
+from skimage import img_as_bool
 
 def read_mp4(fn):
     vidcap = cv2.VideoCapture(fn)
@@ -22,6 +28,70 @@ def read_mp4(fn):
         frames.append(frame)
     vidcap.release()
     return frames
+
+def png2mp4(input_dir, output_dir, save_file_basename='dev', fps=15):
+    os.makedirs(output_dir, exist_ok=True)
+
+    # get all *.png files in the folder
+    list_png_lists = glob.glob(os.path.join(input_dir, '*.png'))
+
+    # sort the .png according to the idx of each frame
+    def _sortFunc(e):
+        file_name = os.path.basename(e)[:-4]
+        idx = int(file_name.split('_')[-1])
+        return idx
+
+    list_png_lists.sort(key=_sortFunc)
+
+    output_path = os.path.join(output_dir, save_file_basename + '.mp4')
+
+    # create a video_angiograms writer
+    height, width = cv2.imread(list_png_lists[0]).shape[:-1]
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")  # Specify video_angiograms codec
+    video_writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+
+    for frame_path in list_png_lists:
+        frame = cv2.imread(frame_path)
+
+        # covert frame to uint8 for writing to video_angiograms
+        frame_uint8 = cv2.normalize(frame, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U)
+
+        # write frame to video_angiograms
+        video_writer.write(frame_uint8)
+
+    # release video_angiograms writer
+    video_writer.release()
+
+
+def read_frames(directory):
+    frames = []
+
+    # List all files in the directory and print them for debugging
+    frame_files = os.listdir(directory)
+    print("All files in the directory:", frame_files)
+
+    for idx, img_name in enumerate(sorted(frame_files)):
+        # Print the current file name being processed
+        print("Processing file:", img_name)
+
+        # Check if the current file is a .png file
+        if img_name.endswith('.jpg'):
+            img_path = os.path.join(directory, img_name)
+            frame = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)  # Read as grayscale
+            frame = frame[:, :, np.newaxis]  # Add a channel dimension
+
+            # Check if the image was successfully read
+            if frame is not None:
+                print(frame.shape)
+                frames.append(frame)
+                print(f"Successfully read {img_name}")
+
+            else:
+                print(f"Failed to read image: {img_name}")
+        else:
+            print(f"Skipping non-png file: {img_name}")
+
+    return frames[::-1]
 
 def run_model(model, rgbs, S_max=128, N=64, iters=16, sw=None):
     rgbs = rgbs.cuda().float() # B, S, C, H, W
@@ -78,8 +148,22 @@ def main(
     print('filename', filename)
     name = Path(filename).stem
     print('name', name)
-    
-    rgbs = read_mp4(filename)
+
+    inputdir = os.path.join(os.getcwd(), 'angiograms/angiogram_seg1')
+    outputdir = os.path.join(os.getcwd(), 'angiograms/mp4video')
+    mp4Agio = png2mp4(inputdir, outputdir)
+    rgbs = read_mp4(mp4Agio)
+    # rgbs = read_frames(abs_path_to_angiograms)
+
+    # anchor_frame = rgbs[0]
+    # skeleton = get_center_lines(anchor_frame)
+    # skeleton = skeleton_to_coordinates(skeleton)
+
+    rgbs = np.stack(rgbs, axis=0) # S,H,W,1
+    print(rgbs.shape)
+    # Convert grayscale to RGB by repeating the channel
+    rgbs = np.repeat(rgbs, 3, axis=-1) # S,H,W,3
+
     rgbs = np.stack(rgbs, axis=0) # S,H,W,3
     rgbs = rgbs[:,:,:,::-1].copy() # BGR->RGB
     rgbs = rgbs[::timestride]
