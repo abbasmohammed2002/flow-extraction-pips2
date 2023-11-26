@@ -56,10 +56,10 @@ def png2mp4(input_dir, output_dir, save_file_basename='dev', fps=15):
     # sort the .png according to the idx of each frame
     def _sortFunc(e):
         file_name = os.path.basename(e)[:-4]
-        print(file_name)
-        print(file_name.split('_')[-1])
+        print(f"file_name: {file_name}")
+        print(f"idx: {file_name.split('_')[-1]}")
         idx = int(file_name.split('_')[-1])
-        print(idx)
+        print(f"idx as int: {idx}")
         return idx
 
     list_png_lists.sort(key=_sortFunc)
