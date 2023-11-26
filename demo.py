@@ -59,8 +59,8 @@ def png2mp4(input_dir, output_dir, save_file_basename='dev', fps=15):
         parts = file_name.split('-')
         print(f"parts: {parts}")
         print(f"file_name: {file_name}")
-        print(f"idx: {file_name.split('_')[-1]}")
-        idx = int(file_name.split('_')[-1])
+        print(f"idx: {parts[-1]}")
+        idx = parts[-1]
         print(f"idx as int: {idx}")
         return idx
 
