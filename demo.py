@@ -159,22 +159,61 @@ def read_frames(directory):
 
     return frames[::-1]
 
-def run_model(model, rgbs, S_max=128, N=64, iters=16, sw=None):
-    rgbs = rgbs.cuda().float() # B, S, C, H, W
+# def run_model(model, rgbs, S_max=128, N=64, iters=16, sw=None):
+#     rgbs = rgbs.cuda().float() # B, S, C, H, W
+
+#     B, S, C, H, W = rgbs.shape
+#     assert(B==1)
+
+#     # pick N points to track; we'll use a uniform grid
+#     N_ = np.sqrt(N).round().astype(np.int32)
+#     grid_y, grid_x = utils.basic.meshgrid2d(B, N_, N_, stack=False, norm=False, device='cuda')
+#     grid_y = 8 + grid_y.reshape(B, -1)/float(N_-1) * (H-16)
+#     grid_x = 8 + grid_x.reshape(B, -1)/float(N_-1) * (W-16)
+#     xy0 = torch.stack([grid_x, grid_y], dim=-1) # B, N_*N_, 2
+#     _, S, C, H, W = rgbs.shape
+
+#     # zero-vel init
+#     trajs_e = xy0.unsqueeze(1).repeat(1,S,1,1)
+
+#     iter_start_time = time.time()
+    
+#     preds, preds_anim, _, _ = model(trajs_e, rgbs, iters=iters, feat_init=None, beautify=True)
+#     trajs_e = preds[-1]
+
+#     iter_time = time.time()-iter_start_time
+#     print('inference time: %.2f seconds (%.1f fps)' % (iter_time, S/iter_time))
+
+#     if sw is not None and sw.save_this:
+#         rgbs_prep = utils.improc.preprocess_color(rgbs)
+#         sw.summ_traj2ds_on_rgbs('outputs/trajs_on_rgbs', trajs_e[0:1], utils.improc.preprocess_color(rgbs[0:1]), cmap='hot', linewidth=1, show_dots=False)
+#     return trajs_e
+
+def run_model(model, anchor_center_lines, rgbs, S_max=128, N=64, iters=16, sw=None):
+    rgbs = rgbs.cuda().float()  # B, S, C, H, W
 
     B, S, C, H, W = rgbs.shape
-    assert(B==1)
+    assert(B == 1)
 
-    # pick N points to track; we'll use a uniform grid
-    N_ = np.sqrt(N).round().astype(np.int32)
-    grid_y, grid_x = utils.basic.meshgrid2d(B, N_, N_, stack=False, norm=False, device='cuda')
-    grid_y = 8 + grid_y.reshape(B, -1)/float(N_-1) * (H-16)
-    grid_x = 8 + grid_x.reshape(B, -1)/float(N_-1) * (W-16)
-    xy0 = torch.stack([grid_x, grid_y], dim=-1) # B, N_*N_, 2
+    # Using pre-defined points
+
+    # Load the points from the .npy file
+    points = anchor_center_lines
+    points[:, [0, 1]] = points[:, [1, 0]]
+    N = points.shape[0]
+    # Convert the numpy array to a PyTorch tensor and reshape it if necessary
+    points_tensor = torch.from_numpy(points).float()
+    print(f"points_tensor shape: {points_tensor.shape}")
+    points_tensor = points_tensor.to('cuda')
+
+    # Assuming points_tensor shape is (N, 2) and we need to add the batch dimension
+    xy0 = points_tensor.unsqueeze(0).repeat(B, 1, 1)  # Now it's B, N, 2
+
+    # zero-vel init: Assuming you want to track these points over S timesteps
+    trajs_e = xy0.unsqueeze(1).repeat(1, S, 1, 1)  # Now it's B, S, N, 2
+
     _, S, C, H, W = rgbs.shape
-
-    # zero-vel init
-    trajs_e = xy0.unsqueeze(1).repeat(1,S,1,1)
+    print('during run', trajs_e.shape)
 
     iter_start_time = time.time()
     
@@ -278,7 +317,7 @@ def main(
         rgb_seq = F.interpolate(rgb_seq, image_size, mode='bilinear').unsqueeze(0) # 1,S,3,H,W
         
         with torch.no_grad():
-            trajs_e = run_model(model, rgb_seq, S_max=S, N=N, iters=iters, sw=sw_t)
+            trajs_e = run_model(model, skeleton, rgb_seq, S_max=S, N=N, iters=iters, sw=sw_t)
 
         print(f"trajs_e.shape: {trajs_e.shape}")
         # Convert rgbs to the correct format if necessary
