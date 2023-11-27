@@ -55,14 +55,14 @@ def visualize_tracking(rgbs, trajs_e):
     """
     Visualize tracking by drawing circles on frames.
     :param rgbs: Original frames.
-    :param trajs_e: Tracked trajectories.
+    :param trajs_e: Tracked trajectories (PyTorch tensor).
     :return: Frames with tracking visualized.
     """
     visualized_frames = []
+    trajs_e_np = trajs_e.cpu().numpy()[0]  # Convert to numpy and remove batch dimension
     for i, frame in enumerate(rgbs):
-        # Assuming trajs_e[i] is a list of (x, y) points for frame i
-        print(f"trajs_e[i]: {trajs_e[i]}")
-        tracked_points = trajs_e[i]
+        # Extract the tracked points for frame i
+        tracked_points = trajs_e_np[i]
         frame_with_circles = draw_circles_on_frame(frame, tracked_points)
         visualized_frames.append(frame_with_circles)
     return visualized_frames
@@ -281,7 +281,16 @@ def main(
             trajs_e = run_model(model, rgb_seq, S_max=S, N=N, iters=iters, sw=sw_t)
 
         print(f"trajs_e.shape: {trajs_e.shape}")
-        print(f"trajs_e: {trajs_e}")
+        # Convert rgbs to the correct format if necessary
+        # Assuming rgbs is a numpy array of shape [S, H, W, C]
+        rgbs = np.array(rgbs).astype(np.uint8)
+
+        # Visualize the tracking
+        visualized_rgbs = visualize_tracking(rgbs, trajs_e)
+
+        # Save the visualized tracking as a video
+        output_video_path = os.path.join(outputdir, 'tracked_video.mp4')
+        save_video(visualized_rgbs, output_video_path)
 
         iter_time = time.time()-iter_start_time
         
