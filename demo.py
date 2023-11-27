@@ -36,6 +36,56 @@ def skeleton_to_coordinates(skeleton):
 
     return coordinates
 
+def draw_circles_on_frame(frame, points, radius=5, color=(0, 255, 0), thickness=2):
+    """
+    Draw circles on the frame at each point in points.
+    :param frame: The image frame (numpy array).
+    :param points: List of (x, y) tuples representing points to draw.
+    :param radius: Radius of the circles.
+    :param color: Color of the circles (B, G, R).
+    :param thickness: Thickness of the circle edges.
+    :return: Frame with circles drawn.
+    """
+    for point in points:
+        center = (int(point[0]), int(point[1]))
+        cv2.circle(frame, center, radius, color, thickness)
+    return frame
+
+def visualize_tracking(rgbs, trajs_e):
+    """
+    Visualize tracking by drawing circles on frames.
+    :param rgbs: Original frames.
+    :param trajs_e: Tracked trajectories.
+    :return: Frames with tracking visualized.
+    """
+    visualized_frames = []
+    for i, frame in enumerate(rgbs):
+        # Assuming trajs_e[i] is a list of (x, y) points for frame i
+        print(f"trajs_e[i]: {trajs_e[i]}")
+        tracked_points = trajs_e[i]
+        frame_with_circles = draw_circles_on_frame(frame, tracked_points)
+        visualized_frames.append(frame_with_circles)
+    return visualized_frames
+
+# After calling run_model
+visualized_rgbs = visualize_tracking(rgbs, trajs_e)
+
+def save_video(frames, output_path, fps=30):
+    """
+    Save the frames as a video.
+    :param frames: List of frames (numpy arrays).
+    :param output_path: Path to save the video.
+    :param fps: Frames per second of the output video.
+    """
+    height, width, layers = frames[0].shape
+    size = (width, height)
+    out = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, size)
+
+    for frame in frames:
+        out.write(frame)
+    out.release()
+
+
 def read_mp4(fn):
     vidcap = cv2.VideoCapture(fn)
     frames = []
@@ -173,11 +223,14 @@ def main(
     mp4_file_path = png2mp4(inputdir, outputdir)
     print('mp4_file_path', mp4_file_path)
     rgbs = read_mp4(mp4_file_path)
+    # reverse the rgb list
+    rgbs = rgbs[::-1]
     print('rgbs', len(rgbs))
 
-    # anchor_frame = rgbs[0]
-    # skeleton = get_center_lines(anchor_frame)
-    # skeleton = skeleton_to_coordinates(skeleton)
+    # get the anchor frame as the first frame
+    anchor_frame = rgbs[0]
+    skeleton = get_center_lines(anchor_frame)
+    skeleton = skeleton_to_coordinates(skeleton)
 
     rgbs = np.stack(rgbs, axis=0) # S,H,W,3
     print(f"rgbs.shape: {rgbs.shape}")
@@ -230,6 +283,9 @@ def main(
         with torch.no_grad():
             trajs_e = run_model(model, rgb_seq, S_max=S, N=N, iters=iters, sw=sw_t)
 
+        print(f"trajs_e.shape: {trajs_e.shape}")
+        print(f"trajs_e: {trajs_e}")
+        
         iter_time = time.time()-iter_start_time
         
         print('%s; step %06d/%d; itime %.2f' % (
