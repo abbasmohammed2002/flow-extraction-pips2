@@ -146,7 +146,7 @@ def run_model(model, rgbs, S_max=128, N=64, iters=16, sw=None):
 def main(
         filename='./stock_videos/camel.mp4',
         S=48, # seqlen
-        N=1024, # number of points per clip
+        N=64, # number of points per clip
         stride=8, # spatial stride of the model
         timestride=1, # temporal stride of the model
         iters=16, # inference steps of the model
