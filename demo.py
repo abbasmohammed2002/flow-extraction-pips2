@@ -174,21 +174,18 @@ def main(
     print('mp4_file_path', mp4_file_path)
     rgbs = read_mp4(mp4_file_path)
     print('rgbs', len(rgbs))
+
     # anchor_frame = rgbs[0]
     # skeleton = get_center_lines(anchor_frame)
     # skeleton = skeleton_to_coordinates(skeleton)
 
-    rgbs = np.stack(rgbs, axis=0) # S,H,W,1
-    print('rgbs.shape', rgbs.shape)
-    # Convert grayscale to RGB by repeating the channel
-    rgbs = np.repeat(rgbs, 3, axis=-1) # S,H,W,3
-    print('rgbs.shape', rgbs.shape)
-
-    # rgbs = np.stack(rgbs, axis=0) # S,H,W,3
+    rgbs = np.stack(rgbs, axis=0) # S,H,W,3
+    print(f"rgbs.shape: {rgbs.shape}")
     rgbs = rgbs[:,:,:,::-1].copy() # BGR->RGB
+    print(f"rgbs.shape: {rgbs.shape}")
     rgbs = rgbs[::timestride]
     S_here,H,W,C = rgbs.shape
-    print('rgbs', rgbs.shape)
+    print(f"rgbs.shape: {rgbs.shape}")
 
     # autogen a name
     model_name = "%s_%d_%d_%s" % (name, S, N, exp_name)
