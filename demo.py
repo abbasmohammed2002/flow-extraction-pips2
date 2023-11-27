@@ -67,9 +67,6 @@ def visualize_tracking(rgbs, trajs_e):
         visualized_frames.append(frame_with_circles)
     return visualized_frames
 
-# After calling run_model
-visualized_rgbs = visualize_tracking(rgbs, trajs_e)
-
 def save_video(frames, output_path, fps=30):
     """
     Save the frames as a video.
@@ -285,7 +282,7 @@ def main(
 
         print(f"trajs_e.shape: {trajs_e.shape}")
         print(f"trajs_e: {trajs_e}")
-        
+
         iter_time = time.time()-iter_start_time
         
         print('%s; step %06d/%d; itime %.2f' % (
