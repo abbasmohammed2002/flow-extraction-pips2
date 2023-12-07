@@ -336,7 +336,7 @@ def main(
         print('%s; step %06d/%d; itime %.2f' % (
             model_name, global_step, max_iters, iter_time))
         
-            
+
     writer_t.close()
 
 if __name__ == '__main__':
