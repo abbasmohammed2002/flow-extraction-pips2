@@ -329,7 +329,7 @@ def main(
 
         # Save the visualized tracking as a video
         output_video_path = os.path.join(outputdir, 'tracked_video.mp4')
-        save_video(visualized_rgbs, output_video_path)
+        save_video(visualized_rgbs, output_video_path, fps=16)
 
         iter_time = time.time()-iter_start_time
         
